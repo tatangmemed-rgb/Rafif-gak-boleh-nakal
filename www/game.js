@@ -1,13 +1,13 @@
-let mode='ai', size=3, board=[], current='X', gameOver=false;
+let mode='ai', size=3, board=[], current='X', gameOver=false, winningCells=[];
 
 function chooseMode(m){
   mode=m;
-  document.querySelectorAll('.big-btn').forEach(b=>b.style.outline='none');
-  event.currentTarget.style.outline='3px solid #f39c12';
+  document.querySelectorAll('.big-btn').forEach(b=>b.classList.remove('selected-mode'));
+  document.getElementById(m==='ai'?'modeAi':'modeTwo').classList.add('selected-mode');
 }
 function chooseSize(n){
   size=n;
-  document.querySelectorAll('.size').forEach(b=>b.classList.toggle('selected',b.textContent.includes(n+' × '+n)));
+  document.querySelectorAll('.size').forEach(b=>b.classList.toggle('selected',Number(b.dataset.size)===n));
 }
 function startGame(){
   document.getElementById('menuScreen').classList.remove('active');
@@ -19,87 +19,90 @@ function startGame(){
 function restartGame(){
   document.getElementById('resultModal').classList.remove('show');
   board=Array(size*size).fill('');
-  current='X'; gameOver=false;
+  current='X'; gameOver=false; winningCells=[];
   renderBoard(); updateStatus();
 }
 function renderBoard(){
   const el=document.getElementById('board');
   el.style.gridTemplateColumns=`repeat(${size},1fr)`;
   el.innerHTML='';
-  const font=Math.max(22,Math.min(54,270/size));
+  const font=Math.max(24,Math.min(64,250/size));
   board.forEach((v,i)=>{
     const c=document.createElement('button');
-    c.className='cell '+(v==='X'?'x':v==='O'?'o':'');
+    c.className='cell'+(v==='X'?' x':v==='O'?' o':'')+(winningCells.includes(i)?' win':'');
     c.style.fontSize=font+'px';
-    c.textContent=v==='X'?'❌':v==='O'?'⭕':'';
+    c.textContent=v;
     c.onclick=()=>move(i);
     el.appendChild(c);
   });
 }
 function updateStatus(){
-  const who=current==='X'?(mode==='ai'?'Giliran Kamu: ❌':'Giliran Player 1: ❌'):(mode==='ai'?'Giliran Komputer: ⭕':'Giliran Player 2: ⭕');
-  document.getElementById('status').textContent=who;
+  const name=current==='X'?(mode==='ai'?'Giliran Kamu':'Giliran Player 1'):(mode==='ai'?'Giliran Komputer':'Giliran Player 2');
+  document.getElementById('status').innerHTML=`${name}: <span class="mark ${current==='X'?'mark-x':'mark-o'}">${current}</span>`;
 }
 function move(i){
-  if(gameOver||board[i]|| (mode==='ai'&&current==='O'))return;
+  if(gameOver||board[i]||(mode==='ai'&&current==='O'))return;
   place(i,current);
-  if(!finishCheck()){
-    current=current==='X'?'O':'X'; updateStatus();
-    if(mode==='ai'&&current==='O')setTimeout(computerMove,380);
-  }
+  if(finishCheck())return;
+  current=current==='X'?'O':'X'; updateStatus();
+  if(mode==='ai'&&current==='O')setTimeout(computerMove,350);
 }
 function place(i,p){board[i]=p;renderBoard();}
+function emptyCells(){return board.map((v,i)=>v?null:i).filter(i=>i!==null);}
 function computerMove(){
   if(gameOver)return;
-  const empty=board.map((v,i)=>v?null:i).filter(v=>v!==null);
-  if(!empty.length)return;
-  // Coba menang, lalu blokir lawan.
+  const empty=emptyCells(); if(!empty.length)return;
   let pick=findWinningMove('O');
   if(pick===null)pick=findWinningMove('X');
+  if(pick===null){
+    const center=Math.floor(size/2)*size+Math.floor(size/2);
+    if(!board[center])pick=center;
+  }
   if(pick===null)pick=empty[Math.floor(Math.random()*empty.length)];
   place(pick,'O');
-  if(!finishCheck()){current='X';updateStatus();}
+  if(finishCheck())return;
+  current='X'; updateStatus();
 }
 function findWinningMove(p){
-  const empty=board.map((v,i)=>v?null:i).filter(v=>v!==null);
-  for(const i of empty){board[i]=p;const w=getWinner();board[i]='';if(w===p)return i;}
+  for(const i of emptyCells()){
+    board[i]=p; const result=getWinner(); board[i]='';
+    if(result&&result.player===p)return i;
+  }
   return null;
 }
 function getWinner(){
-  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
-  // Untuk semua ukuran, kemenangan bila memenuhi satu baris penuh sebesar ukuran papan.
-  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
-    const p=board[r*size+c]; if(!p)continue;
-    for(const [dr,dc] of dirs){
-      let ok=true, cells=[];
-      for(let k=0;k<size;k++){
-        const rr=r+dr*k,cc=c+dc*k;
-        if(rr<0||rr>=size||cc<0||cc>=size||board[rr*size+cc]!==p){ok=false;break;}
-        cells.push(rr*size+cc);
-      }
-      if(ok)return p;
-    }
+  const lines=[];
+  for(let r=0;r<size;r++)lines.push(Array.from({length:size},(_,c)=>r*size+c));
+  for(let c=0;c<size;c++)lines.push(Array.from({length:size},(_,r)=>r*size+c));
+  lines.push(Array.from({length:size},(_,i)=>i*size+i));
+  lines.push(Array.from({length:size},(_,i)=>i*size+(size-1-i)));
+  for(const cells of lines){
+    const p=board[cells[0]];
+    if(p&&cells.every(i=>board[i]===p))return {player:p,cells};
   }
   return null;
 }
 function finishCheck(){
-  const winner=getWinner();
-  if(winner){gameOver=true;showResult(winner);return true;}
-  if(board.every(Boolean)){gameOver=true;showDraw();return true;}
+  const result=getWinner();
+  if(result){
+    gameOver=true; winningCells=result.cells; renderBoard();
+    setTimeout(()=>showResult(result.player),250); return true;
+  }
+  if(board.every(Boolean)){gameOver=true;setTimeout(showDraw,250);return true;}
   return false;
 }
 function showResult(w){
-  const aiWin=mode==='ai'&&w==='O';
-  const title=aiWin?'KAMU KALAH 😭':'MENANG! 🥳';
-  document.getElementById('resultEmoji').textContent=aiWin?'😭😢':'🥳😊';
-  document.getElementById('resultTitle').textContent=title;
-  document.getElementById('resultText').textContent=aiWin?'Jangan sedih, coba lagi ya! 😄':(mode==='ai'?'Hebat! Kamu berhasil mengalahkan komputer! 😄':'Selamat! '+(w==='X'?'Player 1':'Player 2')+' menang! 😊');
+  const aiLoss=mode==='ai'&&w==='O';
+  const winner=w==='X'?(mode==='ai'?'KAMU':'PLAYER 1'):(mode==='ai'?'KOMPUTER':'PLAYER 2');
+  document.getElementById('resultEmoji').textContent=aiLoss?'😭😢':'🥳😊';
+  document.getElementById('resultTitle').textContent=aiLoss?'KAMU KALAH!':'MENANG!';
+  document.getElementById('resultText').textContent=aiLoss?'Komputer menang. Jangan sedih, coba lagi ya! 😄':`Selamat! ${winner} menang!`;
   document.getElementById('resultModal').classList.add('show');
 }
 function showDraw(){
   document.getElementById('resultEmoji').textContent='🤝😄';
   document.getElementById('resultTitle').textContent='SERI!';
-  document.getElementById('resultText').textContent='Hebat! Tidak ada yang kalah.';
+  document.getElementById('resultText').textContent='Tidak ada yang kalah. Main lagi yuk!';
   document.getElementById('resultModal').classList.add('show');
 }
 function goMenu(){

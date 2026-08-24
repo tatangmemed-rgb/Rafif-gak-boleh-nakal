@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#5b2c83">
+  <meta name="theme-color" content="#2857a4">
   <title>Rafif Gak Boleh Nakal</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -18,18 +18,18 @@
     <section id="menuScreen" class="screen active">
       <div class="card">
         <h2>Pilih Mode</h2>
-        <button class="big-btn" onclick="chooseMode('ai')">🤖 <span><b>1 PLAYER</b><small>Melawan Komputer</small></span></button>
-        <button class="big-btn" onclick="chooseMode('two')">👥 <span><b>2 PLAYER</b><small>Bermain Berdua</small></span></button>
+        <button id="modeAi" class="big-btn selected-mode" onclick="chooseMode('ai')">🤖 <span><b>1 PLAYER</b><small>Melawan Komputer</small></span></button>
+        <button id="modeTwo" class="big-btn" onclick="chooseMode('two')">👥 <span><b>2 PLAYER</b><small>Bermain Berdua</small></span></button>
       </div>
 
       <div class="card">
         <h2>Pilih Ukuran Papan</h2>
         <div class="sizes">
-          <button onclick="chooseSize(3)" class="size selected">3 × 3</button>
-          <button onclick="chooseSize(4)" class="size">4 × 4</button>
-          <button onclick="chooseSize(5)" class="size">5 × 5</button>
-          <button onclick="chooseSize(6)" class="size">6 × 6</button>
-          <button onclick="chooseSize(7)" class="size">7 × 7</button>
+          <button onclick="chooseSize(3)" data-size="3" class="size selected">3 × 3</button>
+          <button onclick="chooseSize(4)" data-size="4" class="size">4 × 4</button>
+          <button onclick="chooseSize(5)" data-size="5" class="size">5 × 5</button>
+          <button onclick="chooseSize(6)" data-size="6" class="size">6 × 6</button>
+          <button onclick="chooseSize(7)" data-size="7" class="size">7 × 7</button>
         </div>
       </div>
 
@@ -39,15 +39,15 @@
     <section id="gameScreen" class="screen">
       <div class="topbar">
         <button class="icon-btn" onclick="goMenu()">⌂</button>
-        <div id="status" class="status">Giliran: ❌</div>
+        <div id="status" class="status">Giliran Kamu: <span class="mark mark-x">X</span></div>
         <button class="icon-btn" onclick="restartGame()">↻</button>
       </div>
 
       <div id="board" class="board"></div>
 
       <div class="legend">
-        <span>❌ <b id="xName">Player 1</b></span>
-        <span>⭕ <b id="oName">Player 2</b></span>
+        <span><b class="mark mark-x">X</b> <b id="xName">Player 1</b></span>
+        <span><b class="mark mark-o">O</b> <b id="oName">Player 2</b></span>
       </div>
     </section>
 
